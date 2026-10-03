@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMI 冒險健康計算器 - Anime Health Companion</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Zen Maru Gothic & Noto Sans TC -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            anime: ['"Zen Maru Gothic"', '"Noto Sans TC"', 'sans-serif'],
+          },
+          colors: {
+            animePink: '#FF70A6',
+            animePurple: '#A06CD5',
+            animeBlue: '#70D6FF',
+            animeYellow: '#FFD670',
+            animeGreen: '#06D6A0',
+            animeRed: '#FF477E',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Manga & Anime Core Styles */
+    body {
+      font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif;
+      background: linear-gradient(135deg, #2b1055 0%, #7597de 50%, #ffc3a0 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Halftone Dot Pattern Overlay */
+    .anime-dots-bg {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.15) 2px, transparent 2px);
+      background-size: 18px 18px;
+    }
+
+    /* Sakura Petals Animation Canvas */
+    #sakura-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Comic Outline Card Effect */
+    .comic-card {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px);
+      border: 3.5px solid #1e1b4b;
+      box-shadow: 6px 6px 0px #1e1b4b, 0 10px 25px rgba(0,0,0,0.2);
+      border-radius: 24px;
+    }
+
+    .comic-card-dark {
+      background: rgba(30, 27, 75, 0.85);
+      backdrop-filter: blur(12px);
+      border: 3.5px solid #ffffff;
+      box-shadow: 6px 6px 0px #ff70a6;
+      border-radius: 24px;
+    }
+
+    .comic-btn {
+      border: 3px solid #1e1b4b;
+      box-shadow: 4px 4px 0px #1e1b4b;
+      transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .comic-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px #1e1b4b;
+    }
+    .comic-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0px #1e1b4b;
+    }
+
+    /* Speech Bubble Triangle */
+    .speech-bubble {
+      position: relative;
+      background: #ffffff;
+      border: 3px solid #1e1b4b;
+      box-shadow: 4px 4px 0px #1e1b4b;
+      border-radius: 18px;
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -14px;
+      left: 28px;
+      border-width: 14px 12px 0;
+      border-style: solid;
+      border-color: #1e1b4b transparent;
+      display: block;
+      width: 0;
+    }
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: -9px;
+      left: 30px;
+      border-width: 11px 10px 0;
+      border-style: solid;
+      border-color: #ffffff transparent;
+      display: block;
+      width: 0;
+      z-index: 1;
+    }
+
+    /* Range Slider Styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 12px;
+      cursor: pointer;
+      background: #e2e8f0;
+      border: 2px solid #1e1b4b;
+      border-radius: 999px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 28px;
+      width: 28px;
+      border-radius: 50%;
+      background: #FF70A6;
+      border: 2.5px solid #1e1b4b;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -9px;
+      box-shadow: 2px 2px 0px #1e1b4b;
+      transition: transform 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2) rotate(10deg);
+      background: #FF477E;
+    }
+
+    /* Mascot Bounce Animation */
+    @keyframes mascotFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(2deg); }
+    }
+    .mascot-anim {
+      animation: mascotFloat 3.5s ease-in-out infinite;
+    }
+
+    /* Comic Sparkle Pulse */
+    @keyframes sparklePulse {
+      0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+      50% { transform: scale(1.25) rotate(15deg); opacity: 0.8; }
+    }
+    .sparkle-icon {
+      animation: sparklePulse 2s ease-in-out infinite;
+    }
+  </style>
+</head>
+
+<body class="anime-dots-bg text-slate-800 antialiased py-6 px-4 sm:px-6 min-h-screen flex flex-col justify-between relative">
+
+  <!-- Sakura Floating Petals Canvas -->
+  <canvas id="sakura-canvas"></canvas>
+
+  <!-- Main Container -->
+  <div class="max-w-4xl mx-auto w-full relative z-10 my-auto">
+
+    <!-- Anime Header Title -->
+    <header class="text-center mb-6 sm:mb-8">
+      <div class="inline-block bg-yellow-300 text-indigo-950 px-4 py-1.5 rounded-full border-2 border-indigo-950 font-black text-xs sm:text-sm tracking-wider uppercase shadow-[3px_3px_0px_#1e1b4b] mb-2 transform -rotate-1">
+        ✨ 冒險者身體狀態檢測儀 ✨
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-black text-white tracking-wider drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] flex items-center justify-center gap-2">
+        <span>BMI</span>
+        <span class="text-yellow-300 transform rotate-2 inline-block">健康冒險日誌</span>
+      </h1>
+      <p class="mt-2 text-xs sm:text-sm text-pink-100 font-bold drop-shadow">與專屬動漫小精靈一起記錄你的勇者體能數值！</p>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Left Panel: Input Controller -->
+      <div class="lg:col-span-6 comic-card p-5 sm:p-7 space-y-5">
+        
+        <div class="flex items-center justify-between border-b-2 border-indigo-950 pb-3">
+          <h2 class="text-lg font-black text-indigo-950 flex items-center gap-2">
+            <i class="fa-solid fa-gamepad text-pink-500"></i> 勇者屬性輸入
+          </h2>
+          <span class="text-xs font-bold bg-pink-100 text-pink-600 px-2.5 py-1 rounded-full border border-pink-300">STAGE 1</span>
+        </div>
+
+        <!-- Gender Selector Buttons -->
+        <div>
+          <label class="block text-xs font-black text-indigo-950 mb-2">生理性別 (Gender)</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" id="btn-male" onclick="selectGender('male')" 
+                    class="comic-btn bg-blue-100 text-indigo-950 rounded-2xl p-3 flex items-center justify-center gap-2 font-black text-sm">
+              <i class="fa-solid fa-mars text-blue-500 text-lg"></i> 男生勇者
+            </button>
+            <button type="button" id="btn-female" onclick="selectGender('female')" 
+                    class="comic-btn bg-pink-200 text-indigo-950 rounded-2xl p-3 flex items-center justify-center gap-2 font-black text-sm border-pink-500">
+              <i class="fa-solid fa-venus text-pink-500 text-lg"></i> 女生勇者
+            </button>
+          </div>
+        </div>
+
+        <!-- Height Input & Slider -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label for="height-input" class="text-xs font-black text-indigo-950 flex items-center gap-1.5">
+              <i class="fa-solid fa-ruler-vertical text-purple-600"></i> 身高 (Height)
+            </label>
+            <div class="flex items-center bg-yellow-100 border-2 border-indigo-950 rounded-xl px-2 py-0.5 shadow-[2px_2px_0px_#1e1b4b]">
+              <input type="number" id="height-input" min="100" max="230" value="168" oninput="syncHeight(this.value)"
+                     class="w-14 bg-transparent text-right font-black text-indigo-950 focus:outline-none text-sm">
+              <span class="text-xs font-black text-indigo-900 ml-1">cm</span>
+            </div>
+          </div>
+          <input type="range" id="height-slider" min="100" max="230" value="168" oninput="syncHeight(this.value)">
+        </div>
+
+        <!-- Weight Input & Slider -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label for="weight-input" class="text-xs font-black text-indigo-950 flex items-center gap-1.5">
+              <i class="fa-solid fa-weight-scale text-cyan-600"></i> 體重 (Weight)
+            </label>
+            <div class="flex items-center bg-yellow-100 border-2 border-indigo-950 rounded-xl px-2 py-0.5 shadow-[2px_2px_0px_#1e1b4b]">
+              <input type="number" id="weight-input" min="30" max="200" value="62" step="0.5" oninput="syncWeight(this.value)"
+                     class="w-14 bg-transparent text-right font-black text-indigo-950 focus:outline-none text-sm">
+              <span class="text-xs font-black text-indigo-900 ml-1">kg</span>
+            </div>
+          </div>
+          <input type="range" id="weight-slider" min="30" max="200" value="62" step="0.5" oninput="syncWeight(this.value)">
+        </div>
+
+        <!-- Age Input -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label for="age-input" class="text-xs font-black text-indigo-950 flex items-center gap-1.5">
+              <i class="fa-solid fa-cake-candles text-pink-500"></i> 年齡 (Age)
+            </label>
+            <div class="flex items-center bg-yellow-100 border-2 border-indigo-950 rounded-xl px-2 py-0.5 shadow-[2px_2px_0px_#1e1b4b]">
+              <input type="number" id="age-input" min="10" max="120" value="22" 
+                     class="w-14 bg-transparent text-right font-black text-indigo-950 focus:outline-none text-sm">
+              <span class="text-xs font-black text-indigo-900 ml-1">歲</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <button type="button" onclick="calculateAnimeBMI()" 
+                class="comic-btn w-full py-3.5 bg-yellow-300 text-indigo-950 font-black rounded-2xl flex items-center justify-center gap-2 text-base tracking-wider mt-2">
+          <i class="fa-solid fa-wand-magic-sparkles text-pink-500 text-lg sparkle-icon"></i> 啟動體能數值解析！
+        </button>
+
+      </div>
+
+      <!-- Right Panel: Mascot Companion & Results -->
+      <div class="lg:col-span-6 space-y-5">
+
+        <!-- Mascot Speech & Avatar Display Card -->
+        <div class="comic-card p-5 relative overflow-hidden">
+          
+          <!-- Speech Bubble from Mascot -->
+          <div class="speech-bubble p-3.5 mb-4">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="bg-indigo-950 text-yellow-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Companion Speech</span>
+              <span id="rank-badge" class="bg-yellow-400 text-indigo-950 text-[10px] font-black px-2 py-0.5 rounded-full">RANK: SSR</span>
+            </div>
+            <p id="mascot-dialogue" class="text-xs sm:text-sm font-black text-indigo-950 leading-relaxed">
+              「勇者殿下！我是您的健康小精靈！請輸入數值，發動健康解析魔法吧！」
+            </p>
+          </div>
+
+          <!-- Mascot SVG Avatar Container -->
+          <div class="flex items-center justify-around gap-4 my-2">
+            
+            <!-- SVG Mascot Avatar -->
+            <div class="w-28 h-28 sm:w-32 sm:h-32 mascot-anim flex-shrink-0 relative">
+              <svg id="mascot-svg" viewBox="0 0 120 120" class="w-full h-full filter drop-shadow-[2px_4px_0px_#1e1b4b]">
+                <!-- Body Base -->
+                <circle cx="60" cy="65" r="40" fill="#FFD670" stroke="#1e1b4b" stroke-width="3.5" />
+                <!-- Cat/Elf Ears -->
+                <polygon points="30,35 15,10 45,25" fill="#FFD670" stroke="#1e1b4b" stroke-width="3.5" />
+                <polygon points="32,32 20,15 42,25" fill="#FF70A6" />
+                <polygon points="90,35 105,10 75,25" fill="#FFD670" stroke="#1e1b4b" stroke-width="3.5" />
+                <polygon points="88,32 100,15 78,25" fill="#FF70A6" />
+                <!-- Cheeks -->
+                <ellipse cx="40" cy="72" rx="6" ry="4" fill="#FF70A6" opacity="0.7" />
+                <ellipse cx="80" cy="72" rx="6" ry="4" fill="#FF70A6" opacity="0.7" />
+                
+                <!-- Dynamic Facial Expression Group -->
+                <g id="mascot-face">
+                  <!-- Normal / Happy Eyes -->
+                  <circle cx="45" cy="60" r="5" fill="#1e1b4b" />
+                  <circle cx="75" cy="60" r="5" fill="#1e1b4b" />
+                  <circle cx="47" cy="58" r="2" fill="#ffffff" />
+                  <circle cx="77" cy="58" r="2" fill="#ffffff" />
+                  <!-- Mouth -->
+                  <path d="M 52 70 Q 60 78 68 70" fill="none" stroke="#1e1b4b" stroke-width="3" stroke-linecap="round" />
+                </g>
+              </svg>
+            </div>
+
+            <!-- Score & Gauge Box -->
+            <div class="flex-grow text-center bg-indigo-50 border-2 border-indigo-950 rounded-2xl p-3 shadow-[3px_3px_0px_#1e1b4b]">
+              <span class="text-[11px] font-black text-indigo-900 block uppercase">BMI 數值</span>
+              <div class="my-1">
+                <span id="bmi-num" class="text-4xl font-black text-pink-600 tracking-tight">--.-</span>
+              </div>
+              <span id="bmi-tag" class="inline-block text-xs font-black bg-indigo-950 text-white px-3 py-0.5 rounded-full">
+                待判定
+              </span>
+              <div class="mt-2 text-[11px] font-bold text-gray-600 border-t border-indigo-200 pt-1.5" id="ideal-range-box">
+                理想體重：<span id="ideal-weight-text" class="text-indigo-900 font-black">-- kg</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Anime HP/Power Gauge Meter -->
+          <div class="mt-4">
+            <div class="flex justify-between items-center text-xs font-black text-indigo-950 mb-1">
+              <span><i class="fa-solid fa-bolt text-yellow-500"></i> 體能能量條 (Gauge)</span>
+              <span id="gauge-percent-text" class="font-mono">0%</span>
+            </div>
+            <div class="w-full bg-slate-200 h-5 rounded-full border-2 border-indigo-950 p-0.5 overflow-hidden shadow-[2px_2px_0px_#1e1b4b]">
+              <div id="hp-gauge-bar" class="h-full bg-gradient-to-r from-blue-400 via-green-400 to-pink-500 rounded-full transition-all duration-700 ease-out" style="width: 0%;"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Health Guidance & Quest Advice -->
+        <div class="comic-card p-5">
+          <h3 class="text-xs font-black text-indigo-950 uppercase mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-scroll text-purple-600 text-sm"></i> 衛伏部冒險特訓建議 (Quest Advice)
+          </h3>
+          <p id="health-quest-text" class="text-xs sm:text-sm font-bold text-slate-700 leading-relaxed bg-white/70 p-3 rounded-xl border border-indigo-200">
+            請點擊「啟動體能數值解析」按鈕，獲取專屬冒險特訓攻略！
+          </p>
+        </div>
+
+        <!-- Anime Motto Generator Card -->
+        <div class="comic-card-dark p-4 sm:p-5 text-white">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-black text-yellow-300 flex items-center gap-1">
+              <i class="fa-solid fa-sparkles"></i> 每日二次元激勵語錄
+            </span>
+            <button type="button" onclick="randomMotto()" 
+                    class="comic-btn bg-pink-500 text-white text-[11px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 border-white">
+              <i class="fa-solid fa-rotate"></i> 換一句
+            </button>
+          </div>
+          <p id="anime-motto" class="text-xs sm:text-sm font-bold text-pink-100 italic leading-relaxed">
+            「不管遇到什麼難關，補滿營養與熱量就能再次拯救世界！」
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Health Standard Reference Table (MOHW Taiwan) -->
+    <section class="mt-8 comic-card p-5 sm:p-6">
+      <h3 class="text-sm sm:text-base font-black text-indigo-950 mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-pink-500"></i> 台灣衛生福利部國健署 BMI 標準畫分
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs font-bold border-collapse">
+          <thead>
+            <tr class="border-b-2 border-indigo-950 text-indigo-900">
+              <th class="pb-2 px-2">冒險等級 (Class)</th>
+              <th class="pb-2 px-2">BMI 範圍 (kg/m²)</th>
+              <th class="pb-2 px-2">體能狀態與提示</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y border-indigo-200 text-slate-700">
+            <tr id="row-under" class="transition-colors">
+              <td class="py-2.5 px-2 text-blue-600 font-black">體重過輕</td>
+              <td class="py-2.5 px-2 font-mono">&lt; 18.5</td>
+              <td class="py-2.5 px-2">HP/力量稍顯不足，需要增肌大餐！</td>
+            </tr>
+            <tr id="row-normal" class="transition-colors">
+              <td class="py-2.5 px-2 text-emerald-600 font-black">正常範圍</td>
+              <td class="py-2.5 px-2 font-mono">18.5 ≤ BMI &lt; 24.0</td>
+              <td class="py-2.5 px-2">SSR 級完美狀態！維持均衡飲食！</td>
+            </tr>
+            <tr id="row-over" class="transition-colors">
+              <td class="py-2.5 px-2 text-amber-600 font-black">體重過重</td>
+              <td class="py-2.5 px-2 font-mono">24.0 ≤ BMI &lt; 27.0</td>
+              <td class="py-2.5 px-2">裝備稍顯沉重，開啟輕度有氧運動！</td>
+            </tr>
+            <tr id="row-mild" class="transition-colors">
+              <td class="py-2.5 px-2 text-orange-600 font-black">輕度肥胖</td>
+              <td class="py-2.5 px-2 font-mono">27.0 ≤ BMI &lt; 30.0</td>
+              <td class="py-2.5 px-2">進入鍛鍊特訓模式，多喝水少手搖飲！</td>
+            </tr>
+            <tr id="row-moderate" class="transition-colors">
+              <td class="py-2.5 px-2 text-rose-600 font-black">中度肥胖</td>
+              <td class="py-2.5 px-2 font-mono">30.0 ≤ BMI &lt; 35.0</td>
+              <td class="py-2.5 px-2">建議請教專業導師/營養師規劃訓練！</td>
+            </tr>
+            <tr id="row-severe" class="transition-colors">
+              <td class="py-2.5 px-2 text-red-600 font-black">重度肥胖</td>
+              <td class="py-2.5 px-2 font-mono">≥ 35.0</td>
+              <td class="py-2.5 px-2">身體發出警報，請諮詢醫療門診團隊！</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="mt-8 text-center text-[11px] font-bold text-white drop-shadow">
+    <p>© 二次元 BMI 健康冒險日誌 ‧ 本工具僅供衛教參考</p>
+  </footer>
+
+  <!-- JavaScript Logic Section -->
+  <script>
+    // State
+    let gender = 'male';
+
+    // Anime Mottos List
+    const mottos = [
+      "「不管遇到什麼難關，補滿熱量就能再次拯救世界！」",
+      "「今天的鍛鍊，都是為了明天成為更強大的自己！」",
+      "「真正的勇者，懂得均衡飲食與照顧自己的身體！」",
+      "「踏出冒險的第一步，即使是一小步也是偉大的進展！」",
+      "「喝水是發動高等防禦魔法的最佳秘訣！水分補給！」",
+      "「保持自信笑容，這就是你最強大的極限奧義！」"
+    ];
+
+    // Anime Mascot Expressions (SVG Paths for Face)
+    const mascotFaces = {
+      under: `
+        <!-- Hungry/Weak Eyes -->
+        <path d="M 40 58 Q 45 64 50 58" fill="none" stroke="#1e1b4b" stroke-width="3" stroke-linecap="round" />
+        <path d="M 70 58 Q 75 64 80 58" fill="none" stroke="#1e1b4b" stroke-width="3" stroke-linecap="round" />
+        <!-- Hungry Mouth -->
+        <ellipse cx="60" cy="72" rx="5" ry="7" fill="#1e1b4b" />
+        <!-- Sweat Drop -->
+        <path d="M 85 45 Q 87 40 89 45 Q 89 50 85 45 Z" fill="#70D6FF" stroke="#1e1b4b" stroke-width="1.5" />
+      `,
+      normal: `
+        <!-- Happy Sparkling Eyes -->
+        <path d="M 38 60 Q 45 50 52 60" fill="none" stroke="#1e1b4b" stroke-width="3.5" stroke-linecap="round" />
+        <path d="M 68 60 Q 75 50 82 60" fill="none" stroke="#1e1b4b" stroke-width="3.5" stroke-linecap="round" />
+        <!-- Big Smile -->
+        <path d="M 48 68 Q 60 82 72 68 Z" fill="#FF70A6" stroke="#1e1b4b" stroke-width="2.5" />
+      `,
+      overweight: `
+        <!-- Sweating / Concentrated Eyes -->
+        <circle cx="45" cy="58" r="5" fill="#1e1b4b" />
+        <circle cx="75" cy="58" r="5" fill="#1e1b4b" />
+        <path d="M 38 50 L 50 54" stroke="#1e1b4b" stroke-width="2.5" stroke-linecap="round" />
+        <path d="M 82 50 L 70 54" stroke="#1e1b4b" stroke-width="2.5" stroke-linecap="round" />
+        <!-- Pouting/Determined Mouth -->
+        <path d="M 50 72 L 70 72" fill="none" stroke="#1e1b4b" stroke-width="3.5" stroke-linecap="round" />
+        <!-- Sweat Drop -->
+        <path d="M 88 42 Q 91 35 94 42 Q 94 48 88 42 Z" fill="#70D6FF" stroke="#1e1b4b" stroke-width="2" />
+      `,
+      obese: `
+        <!-- Shocked Eyes -->
+        <circle cx="45" cy="58" r="7" fill="#1e1b4b" />
+        <circle cx="75" cy="58" r="7" fill="#1e1b4b" />
+        <circle cx="45" cy="58" r="3" fill="#ffffff" />
+        <circle cx="75" cy="58" r="3" fill="#ffffff" />
+        <!-- Shocked Mouth O -->
+        <circle cx="60" cy="74" r="8" fill="#1e1b4b" />
+        <!-- Double Sweat Drops -->
+        <path d="M 25 45 Q 28 40 30 45 Q 30 50 25 45 Z" fill="#70D6FF" stroke="#1e1b4b" stroke-width="1.5" />
+        <path d="M 90 45 Q 93 40 95 45 Q 95 50 90 45 Z" fill="#70D6FF" stroke="#1e1b4b" stroke-width="1.5" />
+      `
+    };
+
+    // Category Configuration
+    const categories = {
+      under: {
+        label: "體重過輕",
+        rank: "RANK: A (需補給)",
+        bgClass: "bg-blue-100 text-blue-900",
+        dialogue: "「勇者殿下！力量補充不足！快點補充優質蛋白質與營養大餐，發動增肌魔法！」",
+        advice: "衛福部提醒：您的體重偏輕，容易感到疲倦或免疫力降低。建議增加均衡營養飲食，配合適度肌力訓練，養出充沛體能！",
+        faceKey: "under",
+        tableId: "row-under"
+      },
+      normal: {
+        label: "正常範圍",
+        rank: "RANK: SSR (完美)",
+        bgClass: "bg-emerald-200 text-emerald-950",
+        dialogue: "「太精彩了！體能與數值處於完美的 SSR 巔峰狀態！請繼續維持這個絕佳節奏！」",
+        advice: "衛福部提醒：太棒了！您的 BMI 處於極佳健康範圍！請繼續保持均衡餐食與每週規律運動，擁抱充沛精力！",
+        faceKey: "normal",
+        tableId: "row-normal"
+      },
+      overweight: {
+        label: "體重過重",
+        rank: "RANK: S (特訓中)",
+        bgClass: "bg-amber-200 text-amber-950",
+        dialogue: "「注意囉！裝備感覺有點沈重！讓我們一起展開輕度有氧運動冒險特訓吧！」",
+        advice: "衛福部提醒：體重微幅超出理想範圍。建議調整飲食結構、減少高糖高油零食，並增加日常走路或有氧運動頻率！",
+        faceKey: "overweight",
+        tableId: "row-over"
+      },
+      mild: {
+        label: "輕度肥胖",
+        rank: "RANK: B (需要關注)",
+        bgClass: "bg-orange-200 text-orange-950",
+        dialogue: "「警報！體能裝備超載中！立刻開啟水份補給與減糖運動冒險，加油！」",
+        advice: "衛福部提醒：心血管與代謝負擔微幅提升。建議多喝水取代手搖飲，減少加工食品，制定規律鍛鍊目標！",
+        faceKey: "overweight",
+        tableId: "row-mild"
+      },
+      moderate: {
+        label: "中度肥胖",
+        rank: "RANK: C (緊急修護)",
+        bgClass: "bg-rose-200 text-rose-950",
+        dialogue: "「夥伴！請別灰心，讓我們請教專業營養師導師，開啟量身打造的升級計畫！」",
+        advice: "衛福部提醒：健康風險逐漸升高。建議尋求專業衛教人員或營養師指引，進行系統化飲食與低衝擊運動調理！",
+        faceKey: "obese",
+        tableId: "row-moderate"
+      },
+      severe: {
+        label: "重度肥胖",
+        rank: "RANK: WARNING (醫療防護)",
+        bgClass: "bg-red-300 text-red-950",
+        dialogue: "「發動緊急防護罩！請尋求專業醫療團隊門診，讓我們一步步重拾健康能量！」",
+        advice: "衛福部提醒：高度健康風險警報。請儘速諮詢減重門診與專業醫師，為您規劃專屬健康的修復調理計畫！",
+        faceKey: "obese",
+        tableId: "row-severe"
+      }
+    };
+
+    // Synchronize Inputs
+    function syncHeight(val) {
+      let n = Math.min(Math.max(parseFloat(val) || 168, 100), 230);
+      document.getElementById('height-input').value = n;
+      document.getElementById('height-slider').value = n;
+      updateIdealWeight(n);
+    }
+
+    function syncWeight(val) {
+      let n = Math.min(Math.max(parseFloat(val) || 62, 30), 200);
+      document.getElementById('weight-input').value = n;
+      document.getElementById('weight-slider').value = n;
+    }
+
+    function selectGender(g) {
+      gender = g;
+      const mBtn = document.getElementById('btn-male');
+      const fBtn = document.getElementById('btn-female');
+      if (g === 'male') {
+        mBtn.className = "comic-btn bg-blue-200 text-indigo-950 rounded-2xl p-3 flex items-center justify-center gap-2 font-black text-sm border-blue-500";
+        fBtn.className = "comic-btn bg-white/70 text-indigo-950 rounded-2xl p-3 flex items-center justify-center gap-2 font-black text-sm border-gray-300";
+      } else {
+        fBtn.className = "comic-btn bg-pink-200 text-indigo-950 rounded-2xl p-3 flex items-center justify-center gap-2 font-black text-sm border-pink-500";
+        mBtn.className = "comic-btn bg-white/70 text-indigo-950 rounded-2xl p-3 flex items-center justify-center gap-2 font-black text-sm border-gray-300";
+      }
+    }
+
+    function updateIdealWeight(hCm) {
+      const hM = hCm / 100;
+      const minW = (18.5 * hM * hM).toFixed(1);
+      const maxW = (23.9 * hM * hM).toFixed(1);
+      document.getElementById('ideal-weight-text').innerText = `${minW} ~ ${maxW} kg`;
+    }
+
+    // Calculation Method
+    function calculateAnimeBMI() {
+      const h = parseFloat(document.getElementById('height-input').value) / 100;
+      const w = parseFloat(document.getElementById('weight-input').value);
+
+      if (!h || !w || h <= 0 || w <= 0) return;
+
+      const bmi = parseFloat((w / (h * h)).toFixed(1));
+      document.getElementById('bmi-num').innerText = bmi.toFixed(1);
+
+      let key = 'normal';
+      if (bmi < 18.5) key = 'under';
+      else if (bmi < 24.0) key = 'normal';
+      else if (bmi < 27.0) key = 'overweight';
+      else if (bmi < 30.0) key = 'mild';
+      else if (bmi < 35.0) key = 'moderate';
+      else key = 'severe';
+
+      const cat = categories[key];
+
+      // Update Tag & Rank
+      const tag = document.getElementById('bmi-tag');
+      tag.innerText = cat.label;
+      tag.className = `inline-block text-xs font-black px-3 py-0.5 rounded-full ${cat.bgClass}`;
+      document.getElementById('rank-badge').innerText = cat.rank;
+
+      // Update Mascot Speech & Advice
+      document.getElementById('mascot-dialogue').innerText = cat.dialogue;
+      document.getElementById('health-quest-text').innerText = cat.advice;
+
+      // Update Mascot Face SVG
+      document.getElementById('mascot-face').innerHTML = mascotFaces[cat.faceKey];
+
+      // Update HP Power Gauge Bar
+      let percent = Math.min(Math.max(((bmi - 12) / (36 - 12)) * 100, 5), 100);
+      document.getElementById('hp-gauge-bar').style.width = `${percent}%`;
+      document.getElementById('gauge-percent-text').innerText = `${Math.round(percent)}%`;
+
+      // Highlight Table Rows
+      Object.keys(categories).forEach(k => {
+        const row = document.getElementById(categories[k].tableId);
+        if (row) {
+          if (k === key) {
+            row.className = 'bg-yellow-200/90 font-black shadow-sm';
+          } else {
+            row.className = 'transition-colors';
+          }
+        }
+      });
+    }
+
+    function randomMotto() {
+      const idx = Math.floor(Math.random() * mottos.length);
+      document.getElementById('anime-motto').innerText = mottos[idx];
+    }
+
+    // Sakura Falling Physics Simulation
+    function initSakura() {
+      const canvas = document.getElementById('sakura-canvas');
+      const ctx = canvas.getContext('2d');
+      let width = canvas.width = window.innerWidth;
+      let height = canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      const petals = [];
+      const numPetals = 25;
+
+      for (let i = 0; i < numPetals; i++) {
+        petals.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: Math.random() * 8 + 6,
+          speedY: Math.random() * 1.5 + 0.8,
+          speedX: Math.random() * 1 - 0.5,
+          angle: Math.random() * 360,
+          spin: Math.random() * 0.03 - 0.015,
+          color: Math.random() > 0.3 ? '#FF70A6' : '#FFC3A0'
+        });
+      }
+
+      function animateSakura() {
+        ctx.clearRect(0, 0, width, height);
+
+        petals.forEach(p => {
+          p.y += p.speedY;
+          p.x += Math.sin(p.y * 0.01) + p.speedX;
+          p.angle += p.spin;
+
+          if (p.y > height) {
+            p.y = -10;
+            p.x = Math.random() * width;
+          }
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, p.size, p.size / 2, 0, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = 0.7;
+          ctx.fill();
+          ctx.restore();
+        });
+
+        requestAnimationFrame(animateSakura);
+      }
+
+      animateSakura();
+    }
+
+    // Initialize on Load
+    window.onload = function() {
+      initSakura();
+      updateIdealWeight(168);
+      calculateAnimeBMI();
+    };
+  </script>
+</body>
+</html>
